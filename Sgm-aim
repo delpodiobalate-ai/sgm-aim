@@ -1,4 +1,490 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f294a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="SGM-AIM Pro">
+<title>SGM-AIM Pro v5.0 | Gestão de Manutenção AIM</title>
+<style>
+  :root { --primary:#0f294a; --accent:#1d63b8; --bg:#f1f5f9; --card:#fff; --ok:#16a34a; --err:#dc2626; --warn:#d97706; --border:#cbd5e1; }
+  * { box-sizing:border-box; font-family:'Segoe UI',Arial,sans-serif; margin:0; padding:0; }
+  body { background:var(--bg); color:#1e293b; }
+  header { background:var(--primary); color:#fff; padding:12px 16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
+  header h1 { font-size:16px; }
+  header small { color:#93c5fd; display:block; font-size:11px; }
+  .user-bar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; font-size:11px; }
+  .user-pill { background:rgba(255,255,255,0.14); padding:5px 10px; border-radius:20px; }
+  .sync-pill { background:#15803d; color:#fff; padding:4px 9px; border-radius:20px; font-weight:700; font-size:10px; }
+  .sync-pill.offline { background:#b45309; }
 
+  nav { background:#1e3a5f; display:flex; gap:2px; padding:0 10px; overflow-x:auto; border-bottom:1px solid #0f294a; }
+  nav button { background:transparent; border:none; color:#cbd5e1; padding:10px 12px; cursor:pointer; font-weight:600; font-size:12px; border-bottom:3px solid transparent; white-space:nowrap; }
+  nav button.active { color:#fff; border-bottom-color:#38bdf8; background:rgba(255,255,255,0.1); }
+
+  .container { max-width:1440px; margin:14px auto; padding:0 12px; }
+  .tab { display:none; } .tab.active { display:block; }
+  .grid-4 { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px; margin-bottom:14px; }
+  .card { background:var(--card); border-radius:8px; padding:14px; box-shadow:0 1px 3px rgba(0,0,0,0.08); border:1px solid #e2e8f0; margin-bottom:14px; }
+  .kpi-val { font-size:22px; font-weight:700; margin:4px 0; }
+  .kpi-title { font-size:11px; text-transform:uppercase; color:#64748b; font-weight:700; }
+  .badge { padding:3px 8px; border-radius:12px; font-size:11px; font-weight:700; display:inline-block; }
+  .b-ok { background:#dcfce7; color:#15803d; } .b-err { background:#fee2e2; color:#b91c1c; } .b-warn { background:#fef3c7; color:#b45309; } .b-info { background:#dbeafe; color:#1d4ed8; }
+
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  th, td { border:1px solid var(--border); padding:6px 8px; text-align:left; vertical-align:top; }
+  th { background:#f8fafc; color:#0f172a; font-weight:700; }
+
+  .btn { background:var(--accent); color:#fff; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; font-weight:600; font-size:12px; display:inline-block; }
+  .btn:active { opacity:0.85; }
+  .btn-sm { padding:5px 9px; font-size:11px; }
+  .btn-err { background:var(--err); } .btn-ok { background:var(--ok); } .btn-warn { background:var(--warn); color:#fff; } .btn-dark { background:#334155; }
+
+  .form-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(175px,1fr)); gap:10px; margin-bottom:10px; }
+  label { display:block; font-size:12px; font-weight:600; margin-bottom:4px; color:#334155; }
+  input, select, textarea { width:100%; padding:8px; border:1px solid var(--border); border-radius:6px; font-size:13px; background:#fff; }
+  textarea { min-height:70px; resize:vertical; }
+
+  .fotos-grid { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+  .foto-thumb { width:76px; height:76px; object-fit:cover; border-radius:6px; border:1px solid var(--border); cursor:pointer; }
+  .foto-mini { width:40px; height:40px; object-fit:cover; border-radius:4px; border:1px solid var(--border); margin-right:4px; cursor:pointer; }
+
+  .alerta-browser { background:#fef3c7; border:1px solid #f59e0b; color:#92400e; padding:10px 12px; border-radius:8px; font-size:12px; margin-bottom:12px; display:none; }
+
+  .exemplar-sheet { background:#fff; color:#000; padding:16px; border:1px solid #94a3b8; }
+  .ex-top-meta { font-size:10px; font-weight:700; line-height:1.35; text-transform:uppercase; margin-bottom:6px; }
+  .ex-title-box { text-align:center; font-weight:700; font-size:13px; line-height:1.35; margin:6px 0 10px; text-transform:uppercase; }
+  .ex-visto-wrap { display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px; margin-bottom:8px; font-size:11px; font-weight:700; }
+  .ex-visto-box { border:1px solid #000; padding:6px 14px; min-width:170px; text-align:center; line-height:1.5; }
+  .ex-legenda-box { border:1px solid #000; padding:5px 10px; font-size:10px; font-weight:700; line-height:1.45; }
+  .mapa-wrap { overflow-x:auto; max-height:560px; }
+  .ex-table { width:100%; border-collapse:collapse; font-size:10px; color:#000; }
+  .ex-table th, .ex-table td { border:1px solid #000; padding:3px 4px; vertical-align:middle; }
+  .ex-table th { background:#fff; text-align:center; font-weight:700; }
+  .ex-table td.col-item { text-align:center; width:36px; font-weight:700; }
+  .ex-table td.col-eq { min-width:210px; font-weight:600; }
+  .ex-table td.col-dia { text-align:center; width:20px; padding:2px; font-weight:700; cursor:pointer; }
+  .ex-table td.col-obs { min-width:75px; font-size:9.5px; }
+  .ex-cat-row td { background:#e2e8f0; font-weight:700; text-align:left; font-size:10px; padding:4px 6px; text-transform:uppercase; }
+  .cell-op { color:#000; }
+  .cell-inop { background:#fee2e2; color:#b91c1c; }
+
+  .print-watermark { display:none; }
+  @media print {
+    @page { size: A4 landscape; margin: 8mm; }
+    nav, header, .no-print, .tab:not(.active) { display:none !important; }
+    .container { max-width:100%; margin:0; padding:0; }
+    .card { box-shadow:none; border:none; padding:0; margin:0; background:transparent; }
+    .exemplar-sheet { border:none; padding:0; }
+    .mapa-wrap { max-height:none; overflow:visible; }
+    .cell-inop { background:transparent !important; color:#000 !important; }
+    .print-watermark { display:flex; position:fixed; inset:0; align-items:center; justify-content:center; pointer-events:none; z-index:0; opacity:0.08; }
+    .print-watermark img { max-width:50%; max-height:50%; object-fit:contain; }
+  }
+</style>
+</head>
+<body>
+
+<div class="print-watermark" id="print-watermark"></div>
+
+<header>
+  <div>
+    <h1>SGM-AIM Pro v5.0 • Gestão de Manutenção</h1>
+    <small>Aeroporto Internacional de Maputo • <span id="seguranca-status">Firebase Conectado</span></small>
+  </div>
+  <div class="user-bar no-print">
+    <span class="sync-pill" id="cloud-status-badge">Nuvem: Sincronizando...</span>
+    <span class="user-pill" id="header-user-pill"><b>Delpódio Eugénio Balate</b> • Cód: <b>849122</b></span>
+    <button class="btn btn-sm btn-warn" type="button" onclick="openTab('equipa', document.getElementById('nav-equipa'))">Trocar Acesso</button>
+    <button class="btn btn-sm btn-ok" type="button" onclick="cloudSyncNow()">Sincronizar</button>
+  </div>
+</header>
+
+<nav class="no-print" id="main-nav">
+  <button class="active" type="button" onclick="openTab('dash', this)">1. Painel</button>
+  <button type="button" onclick="openTab('intervencoes', this)">2. Atividades Diárias</button>
+  <button type="button" onclick="openTab('preventivas', this)">3. Preventivas</button>
+  <button type="button" onclick="openTab('equipamentos', this)">4. Equipamentos (103+)</button>
+  <button type="button" onclick="openTab('pecas_propostas', this)">5. Peças &amp; Propostas</button>
+  <button type="button" onclick="openTab('subcontratados', this)">6. Empresas</button>
+  <button type="button" onclick="openTab('modelos_relatorios', this)">7. Relatórios (Word &amp; Mapa)</button>
+  <button type="button" id="nav-equipa" onclick="openTab('equipa', this)">8. Acesso, Equipa &amp; Nuvem</button>
+</nav>
+
+<div class="container">
+  <div class="alerta-browser no-print" id="alerta-ficheiro-local">
+    <b>Aviso do Telemóvel:</b> Você abriu este ficheiro diretamente da pasta <i>Downloads</i> (<code>file://</code>). Alguns navegadores do telemóvel (como o Mi Browser) bloqueiam cliques e internet em ficheiros locais. Para funcionar 100% em tempo real, abra pelo seu link <b><code>https://...github.io/...</code></b> no <b>Google Chrome</b>.
+  </div>
+
+  <!-- 1. PAINEL -->
+  <div id="dash" class="tab active">
+    <div class="grid-4" id="kpi-cards"></div>
+    <div class="card">
+      <h3 style="margin-bottom:10px;">Alertas: Equipamentos Inoperativos (X) e Preventivas Próximas / Vencidas</h3>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>Item</th><th>Equipamento</th><th>Empresa</th><th>Próx. Preventiva</th><th>Situação</th><th>Observação / Peças</th></tr></thead>
+          <tbody id="dash-alerts"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:10px;">Últimas Atividades Diárias Registadas</h3>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>Data</th><th>Responsável &amp; Equipa</th><th>Equipamento</th><th>Empresa</th><th>Tipo</th><th>Descrição</th><th>Fotos</th></tr></thead>
+          <tbody id="dash-recentes"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. ATIVIDADES DIÁRIAS & EQUIPA -->
+  <div id="intervencoes" class="tab">
+    <div class="card">
+      <h3 style="margin-bottom:12px;">Registar Atividade Diária (Preventiva, Diagnóstico, Corretiva, Inspeção)</h3>
+      <div class="form-row">
+        <div><label>Técnico Responsável (Acesso Ativo)</label><input type="text" id="int-tec-principal" readonly style="background:#f8fafc; font-weight:700; color:var(--primary);"></div>
+        <div><label>Equipamento</label><select id="int-eq" onchange="sincronizarEmpresaPorEquipamento()"></select></div>
+        <div><label>Empresa Executante</label><select id="int-emp"></select></div>
+        <div><label>Data da Atividade</label><input type="date" id="int-data" value="2026-11-22"></div>
+        <div><label>Tipo de Atividade / Estado</label>
+          <select id="int-tipo">
+            <option value="Manutenção Preventiva">Manutenção Preventiva (Atualiza Próximo Dia)</option>
+            <option value="Manutenção Corretiva (=)">Manutenção Corretiva — Concluída (=)</option>
+            <option value="Diagnóstico Técnico">Diagnóstico Técnico</option>
+            <option value="Inspeção Operacional">Inspeção Operacional</option>
+            <option value="Avaria (Inoperativo X)">Avaria — Marcar Inoperativo (X)</option>
+          </select>
+        </div>
+        <div><label>Código Obs. (Ex: A1, F1, C1)</label><input type="text" id="int-cod" placeholder="Ex: F1)"></div>
+      </div>
+
+      <div class="card" style="background:#f8fafc; border:1px dashed #94a3b8; padding:12px; margin-bottom:12px;">
+        <label style="color:var(--primary); font-size:12px; margin-bottom:6px;">Outros Técnicos que Participaram na Atividade</label>
+        <div class="form-row" style="margin-bottom:8px;">
+          <div>
+            <label>Selecionar da Equipa Cadastrada</label>
+            <div style="display:flex; gap:6px;">
+              <select id="int-outro-select"></select>
+              <button class="btn btn-sm" type="button" onclick="adicionarParticipante(document.getElementById('int-outro-select').value)">+ Incluir</button>
+            </div>
+          </div>
+          <div>
+            <label>Ou Escrever Nome de Outro Técnico</label>
+            <div style="display:flex; gap:6px;">
+              <input type="text" id="int-outro-nome" placeholder="Ex: Carlos Nhantumbo">
+              <button class="btn btn-sm btn-ok" type="button" onclick="adicionarParticipanteTexto()">+ Adicionar</button>
+            </div>
+          </div>
+        </div>
+        <div id="int-participantes-lista" style="display:flex; flex-wrap:wrap; gap:6px; align-items:center; min-height:24px;"></div>
+      </div>
+
+      <div class="form-row">
+        <div><label>Resumo do Serviço</label><input type="text" id="int-resumo" placeholder="Ex: Revisão de correntes e lubrificação"></div>
+        <div><label>Peças Utilizadas ou Necessárias</label><input type="text" id="int-pecas" placeholder="Ex: 2 rodas de pressão / Nenhuma"></div>
+      </div>
+      <div class="form-row">
+        <div>
+          <label>Relatório Detalhado do Que Foi Feito</label>
+          <textarea id="int-relatorio" placeholder="Descreva o diagnóstico, trabalhos executados, medições/testes e estado final..."></textarea>
+        </div>
+      </div>
+      <div class="form-row">
+        <div>
+          <label>Upload de Fotos (Antes / Durante / Depois)</label>
+          <input type="file" id="int-fotos" accept="image/*" multiple onchange="previewFotosUpload()">
+          <div class="fotos-grid" id="int-fotos-preview"></div>
+        </div>
+      </div>
+      <button class="btn btn-ok" type="button" onclick="guardarIntervencao()">Guardar Atividade Diária</button>
+    </div>
+
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
+        <h3>Histórico de Atividades Diárias</h3>
+        <input type="text" id="filtro-int" onkeyup="renderIntervencoes()" placeholder="Filtrar por equipamento, empresa, técnico..." style="max-width:340px;">
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>Data</th><th>Responsável &amp; Equipa</th><th>Equipamento</th><th>Empresa</th><th>Tipo / Cód.</th><th>Descrição</th><th>Peças</th><th>Fotos</th></tr></thead>
+          <tbody id="lista-intervencoes"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. PREVENTIVAS -->
+  <div id="preventivas" class="tab">
+    <div class="card no-print">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div>
+          <h3>Controle de Manutenção Preventiva e Próximo Dia</h3>
+          <small>Separado por empresa responsável e editável.</small>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <select id="prev-filter-emp" onchange="renderPreventivas()" style="width:220px;"></select>
+          <select id="prev-filter-status" onchange="renderPreventivas()" style="width:170px;">
+            <option value="">Todos os Prazos</option>
+            <option value="ATRASADA">Atrasada</option>
+            <option value="PROXIMA">Próximos 7 dias</option>
+            <option value="EM_DIA">Em dia</option>
+          </select>
+          <button class="btn btn-sm" type="button" onclick="window.print()">Imprimir Plano</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="edit-prev-box" style="display:none; border-left:4px solid var(--warn);">
+      <h3 style="margin-bottom:10px;">Editar Controle Preventivo</h3>
+      <input type="hidden" id="edit-prev-id">
+      <div class="form-row">
+        <div><label>Equipamento</label><input type="text" id="edit-prev-nome" disabled></div>
+        <div><label>Empresa Responsável</label><select id="edit-prev-emp"></select></div>
+        <div><label>Periodicidade (dias)</label><input type="number" id="edit-prev-ciclo" min="1" max="365"></div>
+        <div><label>Última Manutenção</label><input type="date" id="edit-prev-ultima" onchange="recalcularProxPrevInput()"></div>
+        <div><label>Próximo Dia / Data</label><input type="date" id="edit-prev-prox"></div>
+      </div>
+      <div class="form-row">
+        <div><label>Observação / Checklist</label><input type="text" id="edit-prev-obs"></div>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-ok" type="button" onclick="salvarEdicaoPreventiva()">Guardar Alterações</button>
+        <button class="btn btn-dark" type="button" onclick="document.getElementById('edit-prev-box').style.display='none'">Cancelar</button>
+      </div>
+    </div>
+
+    <div id="preventivas-por-empresa"></div>
+  </div>
+
+  <!-- 4. EQUIPAMENTOS -->
+  <div id="equipamentos" class="tab">
+    <div class="card no-print">
+      <h3 style="margin-bottom:12px;">Cadastrar Novo Equipamento</h3>
+      <div class="form-row">
+        <div><label>Item / Código</label><input type="text" id="eq-codigo" placeholder="Ex: 104"></div>
+        <div><label>Nome / Tipo de Equipamento</label><input type="text" id="eq-nome" placeholder="Ex: GERADOR EMERGÊNCIA 02"></div>
+        <div><label>Categoria</label><select id="eq-cat"></select></div>
+        <div><label>Empresa Responsável</label><select id="eq-emp"></select></div>
+      </div>
+      <div class="form-row">
+        <div><label>Periodicidade Preventiva (dias)</label><input type="number" id="eq-ciclo" value="30" min="1" max="365"></div>
+        <div><label>Última Preventiva</label><input type="date" id="eq-ultima" value="2026-10-01"></div>
+        <div><label>Cód. Obs.</label><input type="text" id="eq-obs-cod" placeholder="Ex: F2)"></div>
+        <div><label>Observação / Peças</label><input type="text" id="eq-obs" placeholder="Ex: Operacional"></div>
+      </div>
+      <button class="btn btn-ok" type="button" onclick="addEquipamento()">+ Adicionar Equipamento</button>
+    </div>
+
+    <div class="card" id="edit-eq-box" style="display:none; border-left:4px solid var(--accent);">
+      <h3 style="margin-bottom:10px;">Editar Equipamento</h3>
+      <input type="hidden" id="edit-eq-id">
+      <div class="form-row">
+        <div><label>Item / Código</label><input type="text" id="edit-eq-codigo"></div>
+        <div><label>Nome / Tipo</label><input type="text" id="edit-eq-nome"></div>
+        <div><label>Categoria</label><select id="edit-eq-cat"></select></div>
+        <div><label>Empresa Responsável</label><select id="edit-eq-emp"></select></div>
+        <div><label>Estado</label>
+          <select id="edit-eq-estado">
+            <option value="OP">OPERATIVO (=)</option>
+            <option value="INOP">INOPERATIVO (X)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div><label>Cód. Obs.</label><input type="text" id="edit-eq-obscod"></div>
+        <div><label>Observação</label><input type="text" id="edit-eq-obs"></div>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-ok" type="button" onclick="salvarEdicaoEquipamento()">Guardar Equipamento</button>
+        <button class="btn btn-dark" type="button" onclick="document.getElementById('edit-eq-box').style.display='none'">Cancelar</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
+        <h3>Inventário Completo de Equipamentos</h3>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <input type="text" id="search-eq" onkeyup="renderEquipamentos()" placeholder="Pesquisar..." style="width:180px;">
+          <select id="filter-cat" onchange="renderEquipamentos()" style="width:190px;"></select>
+          <select id="filter-emp" onchange="renderEquipamentos()" style="width:200px;"></select>
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>Item</th><th>Equipamento</th><th>Categoria</th><th>Empresa</th><th>Estado</th><th>Próx. Prev.</th><th>Obs.</th><th>Ações</th></tr></thead>
+          <tbody id="lista-equipamentos"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. PEÇAS & PROPOSTAS -->
+  <div id="pecas_propostas" class="tab">
+    <div class="card">
+      <h3 style="margin-bottom:12px;">Novo Pedido de Peças</h3>
+      <div class="form-row">
+        <div><label>Equipamento</label><select id="ped-eq"></select></div>
+        <div><label>Fornecedora / Empresa</label><select id="ped-forn"></select></div>
+        <div><label>Peça / Material Necessário</label><input type="text" id="ped-peca" placeholder="Ex: 4 depósitos de óleo"></div>
+        <div><label>Quantidade</label><input type="text" id="ped-qtd" value="1"></div>
+        <div><label>Estado do Pedido</label>
+          <select id="ped-status">
+            <option value="Solicitado">Solicitado</option>
+            <option value="Aguarda Cotação">Aguarda Cotação</option>
+            <option value="Aprovado">Aprovado</option>
+            <option value="Entregue">Entregue</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-ok" type="button" onclick="addPedidoPeca()">+ Registar Pedido de Peça</button>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-bottom:10px;">Pedidos de Peças Registados</h3>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>Data</th><th>Equipamento</th><th>Peça</th><th>Qtd</th><th>Fornecedora / Empresa</th><th>Estado</th><th>Ação</th></tr></thead>
+          <tbody id="lista-pedidos-pecas"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-bottom:12px;">Propostas e Controle de Pagamentos</h3>
+      <div class="form-row">
+        <div><label>Empresa Subcontratada / Fornecedora</label><select id="prop-emp"></select></div>
+        <div><label>Descrição da Proposta</label><input type="text" id="prop-desc" placeholder="Ex: Manutenção preventiva / fornecimento peças"></div>
+        <div><label>Valor (MZN / USD)</label><input type="text" id="prop-valor" placeholder="Ex: 145.000 MZN"></div>
+        <div><label>Estado</label>
+          <select id="prop-status">
+            <option value="Proposta Recebida">Proposta Recebida</option>
+            <option value="Aprovada (Aguarda Pagamento)">Aprovada (Aguarda Pagamento)</option>
+            <option value="Paga">Paga</option>
+            <option value="Rejeitada">Rejeitada</option>
+          </select>
+        </div>
+        <div><label>Data / Prazo</label><input type="date" id="prop-data" value="2026-11-22"></div>
+      </div>
+      <button class="btn" type="button" onclick="addPropostaPagamento()">+ Registar Proposta / Pagamento</button>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-bottom:10px;">Propostas e Pagamentos</h3>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>Data</th><th>Empresa / Fornecedora</th><th>Descrição</th><th>Valor</th><th>Estado</th><th>Ação</th></tr></thead>
+          <tbody id="lista-propostas"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. EMPRESAS -->
+  <div id="subcontratados" class="tab">
+    <div class="card">
+      <h3 style="margin-bottom:12px;">Cadastrar Empresa Subcontratada ou Fornecedora</h3>
+      <div class="form-row">
+        <div><label>Nome da Empresa</label><input type="text" id="sub-nome" placeholder="Ex: Peças &amp; Rolamentos Maputo, Lda."></div>
+        <div><label>Classificação</label>
+          <select id="sub-tipo">
+            <option value="Subcontratada">Empresa Subcontratada (Manutenção)</option>
+            <option value="Fornecedora de Peças">Fornecedora de Peças</option>
+            <option value="Mista (Serviços & Peças)">Mista (Serviços &amp; Peças)</option>
+          </select>
+        </div>
+        <div><label>Área / Especialidade</label><input type="text" id="sub-area" placeholder="Ex: Elevadores, Chillers, Rolamentos"></div>
+        <div><label>Contacto / NUIT / Email</label><input type="text" id="sub-contacto" placeholder="Ex: NUIT... | Tel... | email..."></div>
+      </div>
+      <button class="btn btn-ok" type="button" onclick="addEmpresa()">+ Adicionar Empresa</button>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-bottom:10px;">Empresas Cadastradas</h3>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>Empresa</th><th>Classificação</th><th>Área / Especialidade</th><th>Contacto</th><th>Equipamentos</th><th>Ação</th></tr></thead>
+          <tbody id="lista-empresas"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. RELATÓRIOS (WORD SEMANAL & MAPA MENSAL) -->
+  <div id="modelos_relatorios" class="tab">
+    <div class="card no-print">
+      <h3 style="margin-bottom:10px;">Relatório Semanal Editável em Word (.DOC) &amp; Mapa Mensal</h3>
+      <div class="form-row">
+        <div><label>Início da Semana (Word)</label><input type="date" id="sem-data-inicio" value="2026-11-16"></div>
+        <div><label>Fim da Semana (Word)</label><input type="date" id="sem-data-fim" value="2026-11-22"></div>
+        <div><label>Título da Semana</label><input type="text" id="sem-titulo" value="Semana 47 — Novembro 2026"></div>
+      </div>
+      <div class="form-row">
+        <div><label>Mês do Mapa</label><input type="text" id="rel-mes" value="OUTUBRO" onkeyup="salvarConfigRelatorio()"></div>
+        <div><label>Ano</label><input type="text" id="rel-ano" value="2026" onkeyup="salvarConfigRelatorio()"></div>
+        <div><label>Visto / Data</label><input type="text" id="rel-visto-data" value="    /     /" onkeyup="salvarConfigRelatorio()"></div>
+        <div><label>Assinatura / Cargo Visto</label><input type="text" id="rel-visto-cargo" value="O DIRECTOR" onkeyup="salvarConfigRelatorio()"></div>
+      </div>
+      <div class="form-row">
+        <div><label>Filtrar Empresa</label><select id="rep-emp" onchange="renderMapaMensal()"></select></div>
+        <div><label>Filtrar Responsável</label><select id="rep-tec"></select></div>
+        <div><label>Logotipo / Marca AIM</label><input type="file" id="logo-aim-file" accept="image/*" onchange="salvarLogoAIM()"></div>
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+        <button class="btn btn-ok" type="button" onclick="exportarWordSemanal()">Descarregar Relatório Semanal Word (.DOC)</button>
+        <button class="btn" type="button" onclick="exportarWord()">Descarregar Mapa Mensal Word (.DOC)</button>
+        <button class="btn btn-dark" type="button" onclick="window.print()">Imprimir / PDF</button>
+        <button class="btn btn-dark" type="button" onclick="exportarExcel()">Excel (.CSV)</button>
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; padding-top:8px; border-top:1px solid #e2e8f0;">
+        <button class="btn btn-warn" type="button" onclick="exportarBackupJSON()">Baixar Backup (.JSON)</button>
+        <label class="btn btn-dark" style="margin:0; cursor:pointer;">
+          Restaurar Backup (.JSON)
+          <input type="file" id="import-json-file" accept=".json" style="display:none;" onchange="importarBackupJSON()">
+        </label>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="exemplar-sheet">
+        <div class="ex-top-meta">
+          PELOURO DE ENGENHARIA E MANUTENÇÃO<br>
+          DIRECÇÃO DE MANUTENÇÃO DE EQUIPAMENTOS E SISTEMAS<br>
+          AEROPORTO INTERNACIONAL DE MAPUTO<br>
+          MANUTENÇÃO MECÂNICA E TRANSPORTES
+        </div>
+        <div class="ex-title-box">
+          RELATÓRIO MENSAL<br>
+          <span id="sheet-mes">OUTUBRO</span><br>
+          <span id="sheet-ano">2026</span><br>
+          TABELA Nº 1
+        </div>
+        <div class="ex-visto-wrap">
+          <div style="font-size:12px; padding-top:6px;">MAPA DE REGISTO DE OPERATIVIDADE DOS EQUIPAMENTOS</div>
+          <div style="display:flex; gap:10px; align-items:flex-start; flex-wrap:wrap;">
+            <div class="ex-visto-box">
+              VISTO &nbsp;<span id="sheet-visto-data">    /     /</span><br>
+              <span id="sheet-visto-cargo">O DIRECTOR</span>
+            </div>
+            <div class="ex-legenda-box">
+              OPERATIVO: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= <br>
+              INOPERATIVO: &nbsp;&nbsp;&nbsp;X
+            </div>
+          </div>
+        </div>
+        <div class="mapa-wrap">
+          <table class="ex-table" id="mapa-mensal"></table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. ACESSO, EQUIPA & CONFIGURAÇÃO DA NUVEM (ORGANIZADO NUM ÚNICO SEPARADOR) -->
+  <div id="equipa" class="tab">
+    <div class="card">
+      <h3 style="color:var(--primary); margi
 n-bottom:8px;">Entrar ou Cadastrar Código de Acesso Pessoal</h3>
       <p style="font-size:12px; color:#475569; margin-bottom:10px;">Cada técnico usa o seu Nome e Código de Acesso para registar atividades com o seu nome automático.</p>
       <div class="form-row">
@@ -267,10 +753,10 @@ const INITIAL_DATA = {
     { id: 1, nome: 'AIM — Manutenção Mecânica e Transportes', tipo: 'Interna', area: 'Viaturas, SLCI, Limpeza, Pontes, Tapetes, Chillers & UTAs', contacto: 'Aeroporto Internacional de Maputo' },
     { id: 2, nome: 'SeeChanges Electrical & Service, Lda.', tipo: 'Subcontratada', area: "Manutenção Preventiva dos AC's no AIM", contacto: 'NUIT 4008765509' },
     { id: 3, nome: 'SEC África Co., Lda.', tipo: 'Subcontratada', area: 'Elevadores e Escadas Rolantes', contacto: 'AIM — Maputo' },
-    { id: 4, nome: 'Fornecedora Geral de Peças & Lubrificantes', tipo: 'Fornecedora de Peças', area: 'Peças, óleos, correias e rolamentos', contacto: 'Maputo' }
+    { id: 4, nome: 'Outros Fornecedores de Peças', tipo: 'Fornecedora de Peças', area: 'Peças, óleos, correias e rolamentos', contacto: 'Maputo' }
   ],
   tecnicos: [
-    { id: 1, idPortatil: gerarIdPortatil('Delpódio Eugénio Balate', '849122'), nome: 'Delpódio Eugénio Balate', cargo: 'Estagiário', esp: 'Engenharia Mecânica & Manutenção', pin: '849122' }
+    { id: 1, idPortatil: gerarIdPortatil('Delpódio Eugénio Balate', '849122'), nome: 'Delpódio Eugénio Balate', cargo: 'Estagiário', esp: 'Engenharia Mecânica & controle de Sistemas', pin: '849122' }
   ],
   equipamentos: buildInitialEquipamentos(),
   intervencoes: [],
