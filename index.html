@@ -1,0 +1,1786 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SGM-AIM Pro v6.0 — Sistema Digital de Gestão de Manutenção (AIM)</title>
+  <style>
+    :root {
+      --bg: #eef2f6;
+      --surface: #ffffff;
+      --surface-alt: #f8fafc;
+      --text: #0f172a;
+      --muted: #475569;
+      --primary: #0a2e54;
+      --primary-light: #164e87;
+      --accent: #0284c7;
+      --border: #cbd5e1;
+      --ok: #15803d;
+      --ok-bg: #dcfce7;
+      --warn: #b45309;
+      --warn-bg: #fef3c7;
+      --alert: #b91c1c;
+      --alert-bg: #fee2e2;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
+
+    /* PIN LOCK SCREEN */
+    #pinLockOverlay {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(135deg, #071e38, #0a2e54 55%, #164e87);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    #pinLockOverlay.hidden { display: none; }
+    .pin-card {
+      background: #fff;
+      color: var(--text);
+      width: 100%;
+      max-width: 410px;
+      border-radius: 14px;
+      padding: 26px 24px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+      text-align: center;
+    }
+    .pin-card .inst {
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+    .pin-card h2 { margin: 0 0 4px; font-size: 1.35rem; color: var(--primary); }
+    .pin-card p { margin: 0 0 16px; font-size: 0.85rem; color: var(--muted); }
+    .pin-inputs {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      text-align: left;
+      margin-bottom: 14px;
+    }
+    .pin-error {
+      color: var(--alert);
+      background: var(--alert-bg);
+      border: 1px solid #fca5a5;
+      border-radius: 7px;
+      padding: 8px 10px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      display: none;
+    }
+    .pin-error.show { display: block; }
+
+    /* TOPBAR */
+    .topbar {
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      color: #fff;
+      padding: 14px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 2px 8px rgba(10, 46, 84, 0.2);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-logo-img {
+      width: 44px;
+      height: 44px;
+      object-fit: contain;
+      background: #fff;
+      border-radius: 8px;
+      padding: 3px;
+      display: none;
+    }
+    .brand-logo-img.visible { display: block; }
+    .badge {
+      background: rgba(255, 255, 255, 0.18);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+    }
+    .brand h1 { margin: 0; font-size: 1.25rem; }
+    .brand p { margin: 2px 0 0; font-size: 0.82rem; opacity: 0.92; }
+    .topbar-right { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .pill {
+      background: rgba(255, 255, 255, 0.14);
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+    .btn {
+      border: 1px solid transparent;
+      border-radius: 7px;
+      padding: 8px 12px;
+      font-size: 0.84rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: 0.15s ease;
+    }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-light); }
+    .btn-accent { background: var(--accent); color: #fff; }
+    .btn-light { background: rgba(255, 255, 255, 0.16); color: #fff; border-color: rgba(255, 255, 255, 0.28); }
+    .btn-light:hover { background: rgba(255, 255, 255, 0.26); }
+    .btn-outline { background: #fff; color: var(--text); border-color: var(--border); }
+    .btn-outline:hover { background: var(--surface-alt); }
+    .btn-sm { padding: 5px 9px; font-size: 0.78rem; }
+    .btn-danger-sm { padding: 5px 9px; font-size: 0.78rem; background: var(--alert-bg); color: var(--alert); border-color: #fca5a5; }
+
+    .tabs-bar {
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      padding: 0 16px;
+      display: flex;
+      overflow-x: auto;
+      gap: 4px;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    .tab-btn {
+      border: none;
+      background: transparent;
+      padding: 12px 14px;
+      font-size: 0.86rem;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      white-space: nowrap;
+    }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--accent); }
+
+    .container { max-width: 1380px; margin: 18px auto; padding: 0 16px 48px; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+    .kpi {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+    .kpi .label { font-size: 0.8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+    .kpi .val { font-size: 1.9rem; font-weight: 800; margin: 6px 0 2px; color: var(--primary); }
+    .kpi.ok .val { color: var(--ok); }
+    .kpi.warn .val { color: var(--warn); }
+    .kpi.alert .val { color: var(--alert); }
+    .kpi .sub { font-size: 0.78rem; color: var(--muted); }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+    .card-head {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .card h2, .card h3 { margin: 0; font-size: 1.05rem; color: var(--primary); }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 12px;
+    }
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      font-size: 0.83rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    input, select, textarea {
+      padding: 9px 10px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      font-family: inherit;
+      font-size: 0.88rem;
+      background: #fff;
+      color: var(--text);
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: 2px solid rgba(2, 132, 199, 0.25);
+      border-color: var(--accent);
+    }
+    .span-2 { grid-column: span 2; }
+    .span-all { grid-column: 1 / -1; }
+    @media (max-width: 640px) { .span-2 { grid-column: 1 / -1; } }
+
+    .form-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+    th, td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; vertical-align: middle; }
+    th { background: #f1f5f9; font-weight: 700; color: var(--primary); white-space: nowrap; }
+    tr:nth-child(even) td { background: #fcfdff; }
+
+    .badge-state {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.76rem;
+    }
+    .state-op { background: var(--ok-bg); color: var(--ok); }
+    .state-down { background: var(--alert-bg); color: var(--alert); }
+    .state-warn { background: var(--warn-bg); color: var(--warn); }
+
+    .alerts-box { display: grid; gap: 8px; }
+    .alert-row {
+      padding: 10px 12px;
+      border-radius: 7px;
+      border-left: 4px solid var(--alert);
+      background: #fff8f8;
+      font-size: 0.85rem;
+    }
+    .alert-row.warn-row { border-left-color: var(--warn); background: #fffbeb; }
+    .alert-row.ok-row { border-left-color: var(--ok); background: #f0fdf4; }
+
+    .photo-preview-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .photo-thumb {
+      width: 92px;
+      height: 72px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+
+    .mapa-table th, .mapa-table td { text-align: center; padding: 5px; font-size: 0.76rem; min-width: 26px; }
+    .mapa-table th.eq-col, .mapa-table td.eq-col { text-align: left; min-width: 220px; position: sticky; left: 0; background: #fff; z-index: 2; }
+    .mapa-table th.eq-col { background: #f1f5f9; z-index: 3; }
+    .cell-op { background: #dcfce7 !important; color: #15803d; font-weight: 800; cursor: pointer; }
+    .cell-down { background: #fee2e2 !important; color: #b91c1c; font-weight: 800; cursor: pointer; }
+    .cell-empty { cursor: pointer; color: #94a3b8; }
+
+    .cat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .cat-item {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.84rem;
+    }
+    .cat-item strong { color: var(--primary); font-size: 1rem; }
+
+    .cover-sheet-box {
+      border: 2px solid var(--primary);
+      border-radius: 10px;
+      padding: 20px;
+      background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+      margin-bottom: 14px;
+    }
+    .cover-sheet-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 12px;
+      margin-bottom: 12px;
+    }
+    .cover-logo-preview {
+      max-height: 58px;
+      max-width: 140px;
+      object-fit: contain;
+      display: none;
+    }
+    .cover-logo-preview.visible { display: block; }
+
+    .report-preview {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      background: #fff;
+      font-size: 0.86rem;
+    }
+    .visto-line {
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px dashed var(--border);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 0.86rem;
+    }
+    .muted { color: var(--muted); font-size: 0.84rem; }
+    .toast {
+      position: fixed;
+      bottom: 18px;
+      right: 18px;
+      background: var(--primary);
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+      z-index: 999;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: 0.2s ease;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    @media print {
+      .topbar, .tabs-bar, .no-print, .toast { display: none !important; }
+      body { background: #fff; }
+      .container { max-width: 100%; margin: 0; padding: 0; }
+      .panel { display: block !important; }
+      .card { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img id="topLogoImg" class="brand-logo-img" alt="Logotipo Institucional" />
+      <span class="badge">AIM · MANUTENÇÃO MECÂNICA &amp; TRANSPORTES</span>
+      <div>
+        <h1 id="topSystemTitle">SGM-AIM Pro v6.0</h1>
+        <p id="topSystemSubtitle">Sistema Digital de Gestão de Manutenção — Aeroporto Internacional de Maputo</p>
+      </div>
+    </div>
+    <div class="topbar-right no-print">
+      <span class="pill" id="activeUserBadge">Técnico: Delpódio Eugénio Balate</span>
+      <span class="pill" id="syncBadge">Firebase / Local</span>
+      <button class="btn btn-light btn-sm" type="button" onclick="syncFirebaseNow()">Sincronizar Nuvem</button>
+      <button class="btn btn-light btn-sm" type="button" onclick="exportJSON()">Salvar .JSON</button>
+      <button class="btn btn-light btn-sm" type="button" onclick="exportCSV()">Exportar .CSV</button>
+      <button class="btn btn-light btn-sm" type="button" onclick="exportExcelXML()">Exportar Excel (.XLS)</button>
+      <button class="btn btn-accent btn-sm" type="button" onclick="window.print()">Imprimir / PDF</button>
+    </div>
+  </header>
+
+  <nav class="tabs-bar no-print" aria-label="Abas Operacionais">
+    <button class="tab-btn active" data-tab="dashboard" type="button">1. Painel Executivo</button>
+    <button class="tab-btn" data-tab="atividades" type="button">2. Atividades Diárias</button>
+    <button class="tab-btn" data-tab="preventivas" type="button">3. Preventivas</button>
+    <button class="tab-btn" data-tab="equipamentos" type="button">4. Equipamentos (103+)</button>
+    <button class="tab-btn" data-tab="pecas" type="button">5. Peças &amp; Propostas</button>
+    <button class="tab-btn" data-tab="empresas" type="button">6. Empresas</button>
+    <button class="tab-btn" data-tab="relatorios" type="button">7. Relatórios (Word &amp; Mapa)</button>
+    <button class="tab-btn" data-tab="acesso" type="button">8. Acesso, Equipa &amp; Nuvem</button>
+  </nav>
+
+  <main class="container">
+    <!-- 1. PAINEL EXECUTIVO -->
+    <section id="tab-dashboard" class="panel active">
+      <div class="kpi-grid">
+        <div class="kpi">
+          <div class="label">Total de Equipamentos</div>
+          <div class="val" id="kpiTotal">0</div>
+          <div class="sub">Inventário crítico do AIM (10 categorias)</div>
+        </div>
+        <div class="kpi ok">
+          <div class="label">Disponibilidade Operacional</div>
+          <div class="val" id="kpiAvail">0%</div>
+          <div class="sub">Operativos (=) face ao inventário total</div>
+        </div>
+        <div class="kpi alert">
+          <div class="label">Inoperativos ("X")</div>
+          <div class="val" id="kpiDown">0</div>
+          <div class="sub">Equipamentos fora de serviço / em intervenção</div>
+        </div>
+        <div class="kpi warn">
+          <div class="label">Preventivas Críticas</div>
+          <div class="val" id="kpiPrevAlert">0</div>
+          <div class="sub">Atrasadas ou a vencer em até 7 dias</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Alertas Operacionais &amp; Condição da Frota / Sistemas</h2>
+          <span class="muted" id="dashDateLabel"></span>
+        </div>
+        <div class="alerts-box" id="dashboardAlerts"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Resumo por Categoria Operacional (AIM)</h2>
+          <button class="btn btn-outline btn-sm no-print" type="button" onclick="openTab('equipamentos')">Ver Inventário Completo</button>
+        </div>
+        <div class="cat-grid" id="categorySummaryGrid"></div>
+      </div>
+    </section>
+
+    <!-- 2. ATIVIDADES DIÁRIAS -->
+    <section id="tab-atividades" class="panel">
+      <div class="card">
+        <div class="card-head">
+          <h2>Registo de Atividade Diária / Ordem de Serviço</h2>
+          <span class="muted">Atualiza automaticamente o estado (= / X) e o Mapa Mensal (Tabela Nº 1)</span>
+        </div>
+        <form id="atividadeForm" class="form-grid">
+          <label>Data da Intervenção
+            <input type="date" id="atvData" required />
+          </label>
+          <label>Dia do Mapa Mensal (1–31)
+            <input type="number" id="atvDia" min="1" max="31" required />
+          </label>
+          <label class="span-2">Equipamento
+            <select id="atvEquip" required></select>
+          </label>
+          <label>Tipo de Intervenção
+            <select id="atvTipo">
+              <option value="Preventiva">Preventiva</option>
+              <option value="Corretiva">Corretiva</option>
+              <option value="Diagnóstico">Diagnóstico</option>
+              <option value="Inspeção">Inspeção</option>
+              <option value="Avaria">Avaria</option>
+            </select>
+          </label>
+          <label>Técnico Responsável
+            <input type="text" id="atvTecnico" required />
+          </label>
+          <label>Ajudantes / Colegas (Equipa)
+            <input type="text" id="atvColegas" placeholder="Ex.: Técnico de Turno, Equipa HVAC" />
+          </label>
+          <label>Código de Observação
+            <input type="text" id="atvCodigo" placeholder="Ex.: A1, F1, C1, M2" />
+          </label>
+          <label>Estado Após Intervenção
+            <select id="atvEstado">
+              <option value="=">Operativo (=)</option>
+              <option value="X">Inoperativo (X)</option>
+            </select>
+          </label>
+          <label>Peças Aplicadas / Substituídas
+            <input type="text" id="atvPecas" placeholder="Ex.: Rolamento, Correia, Filtro, Sensor" />
+          </label>
+          <label class="span-2">Descrição Técnica / Diagnóstico / Evidências
+            <textarea id="atvDescricao" rows="2" placeholder="Descreva o trabalho executado, medições, causa da avaria ou pendências..."></textarea>
+          </label>
+          <label class="span-2">Registo Fotográfico da Intervenção (Antes / Durante / Depois)
+            <input type="file" id="atvFotos" accept="image/*" multiple />
+            <div class="photo-preview-grid" id="atvPhotoPreview"></div>
+          </label>
+          <div class="span-all form-actions">
+            <button type="reset" class="btn btn-outline" onclick="clearAtvPhotos()">Limpar</button>
+            <button type="submit" class="btn btn-primary">Guardar Atividade</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h3>Histórico de Atividades Diárias</h3>
+          <input type="search" id="searchAtividades" placeholder="Filtrar por equipamento, técnico ou código..." style="min-width: 240px;" />
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Data (Dia)</th>
+                <th>Equipamento</th>
+                <th>Tipo</th>
+                <th>Técnico / Equipa</th>
+                <th>Cód.</th>
+                <th>Estado</th>
+                <th>Peças / Descrição</th>
+                <th>Fotos</th>
+                <th class="no-print">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="atividadesBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. PREVENTIVAS -->
+    <section id="tab-preventivas" class="panel">
+      <div class="card">
+        <div class="card-head">
+          <h2>Plano de Manutenções Preventivas</h2>
+          <div style="display:flex; flex-wrap:wrap; gap:8px;">
+            <select id="filtroPrevEmpresa">
+              <option value="TODAS">Todas as Entidades</option>
+              <option value="AIM">AIM (Interna)</option>
+              <option value="SeeChanges Electrical & Service">SeeChanges Electrical &amp; Service</option>
+              <option value="SEC África">SEC África</option>
+            </select>
+            <select id="filtroPrevStatus">
+              <option value="TODOS">Todos os Estados</option>
+              <option value="ATRASADA">Atrasada (Vermelho)</option>
+              <option value="PROXIMA">Próxima a 7 Dias (Amarelo)</option>
+              <option value="EM_DIA">Em Dia (Verde)</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Equipamento</th>
+                <th>Categoria</th>
+                <th>Entidade</th>
+                <th>Ciclo (Dias)</th>
+                <th>Última Manutenção</th>
+                <th>Próxima Data</th>
+                <th>Situação</th>
+                <th class="no-print">Ação</th>
+              </tr>
+            </thead>
+            <tbody id="preventivasBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. EQUIPAMENTOS (103+) -->
+    <section id="tab-equipamentos" class="panel">
+      <div class="card">
+        <div class="card-head">
+          <h2>Cadastro Rápido de Novo Equipamento (103+)</h2>
+        </div>
+        <form id="equipForm" class="form-grid">
+          <label>Código <input type="text" id="eqCodigo" placeholder="Ex.: EQ-104" required /></label>
+          <label>Designação <input type="text" id="eqNome" placeholder="Ex.: Tapete Rolante Partidas #02" required /></label>
+          <label>Categoria Operacional
+            <select id="eqCategoria">
+              <option>Viaturas</option>
+              <option>SLCI</option>
+              <option>Equipamentos de Limpeza das Áreas Operacionais</option>
+              <option>Escadas Rolantes</option>
+              <option>Elevadores</option>
+              <option>Pontes de Embarque</option>
+              <option>Tapetes Rolantes</option>
+              <option>Chillers</option>
+              <option>Unidades Tratadoras de Ar (UTA)</option>
+              <option>Ar Condicionado (AC)</option>
+            </select>
+          </label>
+          <label>Entidade Responsável
+            <select id="eqEmpresa">
+              <option>AIM</option>
+              <option>SeeChanges Electrical & Service</option>
+              <option>SEC África</option>
+            </select>
+          </label>
+          <label>Estado Inicial
+            <select id="eqEstado">
+              <option value="=">Operativo (=)</option>
+              <option value="X">Inoperativo (X)</option>
+            </select>
+          </label>
+          <label>Ciclo Preventivo (Dias)
+            <input type="number" id="eqCiclo" value="30" min="1" required />
+          </label>
+          <div class="span-all form-actions">
+            <button type="submit" class="btn btn-primary">Adicionar ao Inventário</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Inventário de Equipamentos Críticos do AIM</h2>
+          <div style="display:flex; flex-wrap:wrap; gap:8px;">
+            <input type="search" id="searchEquip" placeholder="Pesquisar código, nome, categoria ou empresa..." style="min-width:250px;" />
+            <select id="filterEqCat">
+              <option value="TODAS">Todas as Categorias</option>
+              <option>Viaturas</option>
+              <option>SLCI</option>
+              <option>Equipamentos de Limpeza das Áreas Operacionais</option>
+              <option>Escadas Rolantes</option>
+              <option>Elevadores</option>
+              <option>Pontes de Embarque</option>
+              <option>Tapetes Rolantes</option>
+              <option>Chillers</option>
+              <option>Unidades Tratadoras de Ar (UTA)</option>
+              <option>Ar Condicionado (AC)</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Designação</th>
+                <th>Categoria</th>
+                <th>Entidade</th>
+                <th>Estado Atual</th>
+                <th class="no-print">Alternar Estado</th>
+              </tr>
+            </thead>
+            <tbody id="equipamentosBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. PEÇAS & PROPOSTAS -->
+    <section id="tab-pecas" class="panel">
+      <div class="card">
+        <div class="card-head">
+          <h2>Registo de Pedido de Peça ou Proposta Comercial</h2>
+        </div>
+        <form id="pecaForm" class="form-grid">
+          <label class="span-2">Descrição da Peça / Material / Proposta
+            <input type="text" id="pecaItem" placeholder="Ex.: Correia de transmissão / Proposta revisão Chiller" required />
+          </label>
+          <label>Fornecedor / Subcontratada
+            <input type="text" id="pecaFornecedor" placeholder="Ex.: SeeChanges Electrical & Service, SEC África" required />
+          </label>
+          <label>Estado do Processo
+            <select id="pecaEstado">
+              <option>Solicitado</option>
+              <option>Aguarda Cotação</option>
+              <option>Aprovado</option>
+              <option>Entregue</option>
+            </select>
+          </label>
+          <label>Quantidade
+            <input type="number" id="pecaQtd" value="1" min="1" />
+          </label>
+          <label>Valor Estimado (MT)
+            <input type="number" id="pecaValor" step="0.01" placeholder="0.00" />
+          </label>
+          <div class="span-all form-actions">
+            <button type="submit" class="btn btn-primary">Guardar Pedido / Proposta</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h3>Pedidos de Peças &amp; Propostas Comerciais</h3>
+          <strong id="pecasTotalLabel" class="muted"></strong>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Item / Proposta</th>
+                <th>Fornecedor / Subcontratada</th>
+                <th>Qtd.</th>
+                <th>Estado</th>
+                <th>Valor (MT)</th>
+                <th class="no-print">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="pecasBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. EMPRESAS -->
+    <section id="tab-empresas" class="panel">
+      <div class="card">
+        <div class="card-head">
+          <h2>Entidade Gestora Interna, Subcontratadas e Fornecedores</h2>
+          <button class="btn btn-primary btn-sm no-print" type="button" onclick="addEmpresaPrompt()">+ Nova Entidade / Fornecedor</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Entidade</th>
+                <th>Tipo</th>
+                <th>Área de Atuação / Especialidade</th>
+                <th>Equipamentos Associados</th>
+              </tr>
+            </thead>
+            <tbody id="empresasBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. RELATÓRIOS (WORD, EXCEL & MAPA — TABELA Nº 1 + FOLHA DE ROSTO) -->
+    <section id="tab-relatorios" class="panel">
+      <div class="card">
+        <div class="card-head">
+          <h2>Geração de Relatório Semanal (.DOC / Word), Excel (.XLS) &amp; Mapa Mensal Oficial (Tabela Nº 1)</h2>
+          <div class="no-print" style="display:flex; flex-wrap:wrap; gap:8px;">
+            <button class="btn btn-primary btn-sm" type="button" onclick="downloadWordReport('semanal')">Baixar Relatório Semanal (.DOC)</button>
+            <button class="btn btn-accent btn-sm" type="button" onclick="downloadWordReport('mapa')">Baixar Mapa Mensal Tab. Nº 1 (.DOC)</button>
+            <button class="btn btn-outline btn-sm" type="button" onclick="exportExcelXML()">Baixar Planilha Excel (.XLS)</button>
+            <button class="btn btn-outline btn-sm" type="button" onclick="window.print()">Imprimir / Guardar PDF</button>
+          </div>
+        </div>
+
+        <div class="cover-sheet-box" id="coverSheetPreview">
+          <div class="cover-sheet-header">
+            <img id="coverLogoPreview" class="cover-logo-preview" alt="Logo Institucional" />
+            <div>
+              <div id="covPelouro" style="font-size:0.78rem; font-weight:800; color:var(--accent); text-transform:uppercase;">PELOURO DE ENGENHARIA E MANUTENÇÃO · DIRECÇÃO DE MANUTENÇÃO DE EQUIPAMENTOS E SISTEMAS</div>
+              <div id="covEntidade" style="font-size:1.05rem; font-weight:800; color:var(--primary);">AEROPORTO INTERNACIONAL DE MAPUTO (AIM) — MANUTENÇÃO MECÂNICA E TRANSPORTES</div>
+              <div id="covTituloDoc" style="font-size:0.92rem; font-weight:600; color:var(--text);">Relatório Operacional de Manutenção, Disponibilidade e Mapa Mensal (Tabela Nº 1)</div>
+            </div>
+          </div>
+          <div style="display:flex; flex-wrap:wrap; justify-content:space-between; gap:12px; font-size:0.84rem;">
+            <div><strong>Período / Referência:</strong> <span id="covPeriodo">Novembro de 2026</span></div>
+            <div><strong>Responsável / Elaboração:</strong> <span id="covAutor">Delpódio Eugénio Balate</span></div>
+            <div><strong>Aprovação / Direcção:</strong> <span id="covDireccao">Direcção de Manutenção de Equipamentos e Sistemas</span></div>
+          </div>
+        </div>
+
+        <p class="muted">
+          Legenda oficial: <strong>=</strong> Operativo | <strong>X</strong> Inoperativo. Clique numa célula do mapa mensal para alternar rapidamente entre <strong>=</strong>, <strong>X</strong> e vazio.
+        </p>
+
+        <h3>Pré-visualização — Mapa Mensal Oficial (Tabela Nº 1 — 31 Dias)</h3>
+        <div class="table-wrap" style="margin-top: 8px;">
+          <table class="mapa-table">
+            <thead>
+              <tr>
+                <th class="eq-col">Equipamento</th>
+                <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th>
+                <th>11</th><th>12</th><th>13</th><th>14</th><th>15</th><th>16</th><th>17</th><th>18</th><th>19</th><th>20</th>
+                <th>21</th><th>22</th><th>23</th><th>24</th><th>25</th><th>26</th><th>27</th><th>28</th><th>29</th><th>30</th><th>31</th>
+              </tr>
+            </thead>
+            <tbody id="mapaMensalBody"></tbody>
+          </table>
+        </div>
+
+        <div class="visto-line">
+          <div><strong>Elaborado por:</strong> <span id="relElaboradoPor">Delpódio Eugénio Balate</span></div>
+          <div><strong>Visto do Director de Manutenção:</strong> ________________________________________</div>
+          <div><strong>Data:</strong> ____/____/2026</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h3>Resumo Consolidado do Relatório Semanal</h3>
+        </div>
+        <div class="report-preview" id="weeklyReportPreview"></div>
+      </div>
+    </section>
+
+    <!-- 8. ACESSO, EQUIPA & NUVEM (PINs INDIVIDUAIS, FOLHA DE ROSTO & FIREBASE) -->
+    <section id="tab-acesso" class="panel">
+      <div class="card">
+        <div class="card-head">
+          <h2>Configuração do Utilizador Ativo, Folha de Rosto Institucional &amp; Sincronização Nuvem (Firebase)</h2>
+        </div>
+        <form id="configForm" class="form-grid">
+          <label>Utilizador Ativo / Responsável
+            <input type="text" id="cfgUsuario" required />
+          </label>
+          <label>Cargo / Função
+            <input type="text" id="cfgCargo" />
+          </label>
+          <label>PIN do Utilizador Ativo
+            <input type="password" id="cfgPin" maxlength="8" />
+          </label>
+          <label>URL da Base de Dados na Nuvem (Firebase Realtime Database REST URL)
+            <input type="url" id="cfgCloudUrl" placeholder="https://seu-projeto-default-rtdb.firebaseio.com/sgm_aim" />
+          </label>
+          <label>Pelouro / Direcção (Folha de Rosto)
+            <input type="text" id="cfgPelouro" />
+          </label>
+          <label>Título Institucional do Relatório (Folha de Rosto)
+            <input type="text" id="cfgTituloDoc" />
+          </label>
+          <label>Período / Referência (Folha de Rosto)
+            <input type="text" id="cfgPeriodo" />
+          </label>
+          <label>Logotipo Institucional (Folha de Rosto)
+            <input type="file" id="cfgLogoFile" accept="image/*" />
+          </label>
+          <div class="span-all form-actions">
+            <button type="button" class="btn btn-outline" onclick="syncFirebaseNow()">Sincronizar Agora com Firebase</button>
+            <button type="button" class="btn btn-outline" onclick="resetDemoData()">Repor Dados Padrão</button>
+            <button type="submit" class="btn btn-primary">Guardar Configurações</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Gestão de Técnicos Cadastrados &amp; PINs Individuais</h2>
+        </div>
+        <form id="teamPinForm" class="form-grid" style="margin-bottom:14px;">
+          <label>Nome do Técnico / Engenheiro / Chefia
+            <input type="text" id="teamNome" placeholder="Ex.: Eng. Manuel Tembe" required />
+          </label>
+          <label>Função / Turno
+            <input type="text" id="teamFuncao" placeholder="Ex.: Técnico de Manutenção / Turno A" />
+          </label>
+          <label>PIN Individual (4–8 dígitos)
+            <input type="text" id="teamPin" maxlength="8" placeholder="Ex.: 4589" required />
+          </label>
+          <div class="form-actions" style="align-items:flex-end;">
+            <button type="submit" class="btn btn-primary">+ Adicionar Técnico &amp; PIN</button>
+          </div>
+        </form>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Técnico / Utilizador</th>
+                <th>Função / Turno</th>
+                <th>PIN Individual</th>
+                <th class="no-print">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="teamPinsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const STORAGE_KEY = "SGM_AIM_PRO_V6_FULL_STATE";
+
+    const DEFAULT_STATE = {
+      authenticated: true,
+      config: {
+        usuario: "Delpódio Eugénio Balate",
+        cargo: "Estagiário de Engenharia Mecânica e Controlo de Sistemas — AIM",
+        pin: "1234",
+        cloudUrl: "",
+        pelouro: "PELOURO DE ENGENHARIA E MANUTENÇÃO · DIRECÇÃO DE MANUTENÇÃO DE EQUIPAMENTOS E SISTEMAS",
+        tituloDoc: "Relatório Operacional de Manutenção, Disponibilidade e Mapa Mensal (Tabela Nº 1)",
+        periodo: "Novembro de 2026",
+        logoDataUrl: ""
+      },
+      teamPins: [
+        { nome: "Delpódio Eugénio Balate", funcao: "Estagiário de Engenharia Mecânica e Controlo de Sistemas", pin: "1234" },
+        { nome: "Chefia de Manutenção Mecânica", funcao: "Supervisão & Validação Operacional", pin: "2026" },
+        { nome: "Técnico de Turno / HVAC & BHS", funcao: "Operação e Intervenção no Terreno", pin: "1111" }
+      ],
+      equipamentos: [
+        { codigo: "EQ-001", nome: "Chiller Central #01", categoria: "Chillers", empresa: "SeeChanges Electrical & Service", estado: "=", cicloDias: 30, ultimaPrev: "2026-11-05" },
+        { codigo: "EQ-002", nome: "Chiller Central #02", categoria: "Chillers", empresa: "SeeChanges Electrical & Service", estado: "=", cicloDias: 30, ultimaPrev: "2026-11-08" },
+        { codigo: "EQ-003", nome: "UTA Terminal Internacional #01", categoria: "Unidades Tratadoras de Ar (UTA)", empresa: "AIM", estado: "=", cicloDias: 30, ultimaPrev: "2026-10-15" },
+        { codigo: "EQ-004", nome: "UTA Terminal Doméstico #02", categoria: "Unidades Tratadoras de Ar (UTA)", empresa: "AIM", estado: "=", cicloDias: 30, ultimaPrev: "2026-11-10" },
+        { codigo: "EQ-005", nome: "Sistema AC Sala Técnica / Radar #01", categoria: "Ar Condicionado (AC)", empresa: "SeeChanges Electrical & Service", estado: "=", cicloDias: 30, ultimaPrev: "2026-11-02" },
+        { codigo: "EQ-006", nome: "Ponte de Embarque #01", categoria: "Pontes de Embarque", empresa: "AIM", estado: "=", cicloDias: 15, ultimaPrev: "2026-11-14" },
+        { codigo: "EQ-007", nome: "Ponte de Embarque #02", categoria: "Pontes de Embarque", empresa: "AIM", estado: "=", cicloDias: 15, ultimaPrev: "2026-11-01" },
+        { codigo: "EQ-008", nome: "Tapete Rolante Partidas #01", categoria: "Tapetes Rolantes", empresa: "AIM", estado: "=", cicloDias: 15, ultimaPrev: "2026-11-12" },
+        { codigo: "EQ-009", nome: "Tapete Rolante Chegadas #03", categoria: "Tapetes Rolantes", empresa: "AIM", estado: "X", cicloDias: 15, ultimaPrev: "2026-11-04" },
+        { codigo: "EQ-010", nome: "Escada Rolante Área Operacional #01", categoria: "Escadas Rolantes", empresa: "SEC África", estado: "=", cicloDias: 30, ultimaPrev: "2026-10-20" },
+        { codigo: "EQ-011", nome: "Elevador Carga / Serviço #02", categoria: "Elevadores", empresa: "SEC África", estado: "=", cicloDias: 30, ultimaPrev: "2026-11-11" },
+        { codigo: "EQ-012", nome: "Viatura SLCI Intervenção Rápida #01", categoria: "SLCI", empresa: "AIM", estado: "=", cicloDias: 15, ultimaPrev: "2026-11-19" },
+        { codigo: "EQ-013", nome: "Viatura Operacional / Transporte #04", categoria: "Viaturas", empresa: "AIM", estado: "=", cicloDias: 20, ultimaPrev: "2026-10-25" },
+        { codigo: "EQ-014", nome: "Varredora / Limpeza Área Operacional #01", categoria: "Equipamentos de Limpeza das Áreas Operacionais", empresa: "AIM", estado: "=", cicloDias: 15, ultimaPrev: "2026-11-16" }
+      ],
+      empresas: [
+        { nome: "Aeroporto Internacional de Maputo (AIM)", tipo: "Equipa Interna", area: "Manutenção Mecânica e Transportes, HVAC, Pontes, BHS, SLCI e Limpeza Operacional" },
+        { nome: "SeeChanges Electrical & Service", tipo: "Subcontratada", area: "Sistemas Elétricos, Chillers, AC e Especialidades Técnicas" },
+        { nome: "SEC África", tipo: "Subcontratada", area: "Escadas Rolantes, Elevadores e Manutenção Especializada" }
+      ],
+      atividades: [
+        {
+          id: "ATV-1",
+          data: "2026-11-23",
+          dia: 23,
+          equipamento: "EQ-001 — Chiller Central #01",
+          tipo: "Inspeção",
+          tecnico: "Delpódio Eugénio Balate",
+          colegas: "Equipa de Manutenção Mecânica",
+          codigo: "A1",
+          estado: "=",
+          pecas: "N/A",
+          descricao: "Inspeção de rotina, verificação de pressões, temperaturas de ida/retorno e níveis de operação.",
+          fotos: []
+        },
+        {
+          id: "ATV-2",
+          data: "2026-11-23",
+          dia: 23,
+          equipamento: "EQ-009 — Tapete Rolante Chegadas #03",
+          tipo: "Diagnóstico",
+          tecnico: "Delpódio Eugénio Balate",
+          colegas: "Técnico de Turno",
+          codigo: "F1",
+          estado: "X",
+          pecas: "Correia / Sensor a verificar",
+          descricao: "Identificada paragem intermitente no sistema de tração; mantido em observação ('X') para substituição de componente.",
+          fotos: []
+        }
+      ],
+      pecas: [
+        {
+          id: "PEC-1",
+          data: "2026-11-23",
+          item: "Conjunto de correia e roletes — Tapete Rolante Chegadas #03",
+          fornecedor: "AIM / Fornecedor Técnico",
+          qtd: 1,
+          estado: "Aguarda Cotação",
+          valor: "24500.00"
+        },
+        {
+          id: "PEC-2",
+          data: "2026-11-22",
+          item: "Revisão e verificação elétrica — Chillers Centrais",
+          fornecedor: "SeeChanges Electrical & Service",
+          qtd: 1,
+          estado: "Aprovado",
+          valor: "68000.00"
+        }
+      ],
+      mapaDias: {}
+    };
+
+    function cloneDefault() {
+      return JSON.parse(JSON.stringify(DEFAULT_STATE));
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return cloneDefault();
+        const parsed = JSON.parse(raw);
+        const def = cloneDefault();
+        return {
+          authenticated: Boolean(parsed.authenticated),
+          config: { ...def.config, ...(parsed.config || {}) },
+          teamPins: Array.isArray(parsed.teamPins) && parsed.teamPins.length ? parsed.teamPins : def.teamPins,
+          equipamentos: Array.isArray(parsed.equipamentos) && parsed.equipamentos.length ? parsed.equipamentos : def.equipamentos,
+          empresas: Array.isArray(parsed.empresas) && parsed.empresas.length ? parsed.empresas : def.empresas,
+          atividades: Array.isArray(parsed.atividades) ? parsed.atividades : def.atividades,
+          pecas: Array.isArray(parsed.pecas) ? parsed.pecas : def.pecas,
+          mapaDias: parsed.mapaDias && typeof parsed.mapaDias === "object" ? parsed.mapaDias : {}
+        };
+      } catch {
+        return cloneDefault();
+      }
+    }
+
+    let state = loadState();
+    let pendingPhotos = [];
+
+    function showToast(msg) {
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.classList.add("show");
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => el.classList.remove("show"), 2600);
+    }
+
+    function pushFirebaseBackground() {
+      const url = (state.config.cloudUrl || "").trim();
+      if (!url) return;
+      const endpoint = url.replace(/\/+$/, "") + ".json";
+      const payload = { ...state, authenticated: true, updatedAt: new Date().toISOString() };
+      fetch(endpoint, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      })
+        .then(() => { document.getElementById("syncBadge").textContent = "Firebase Sincronizado"; })
+        .catch(() => { document.getElementById("syncBadge").textContent = "Firebase Pendente"; });
+    }
+
+    async function syncFirebaseNow() {
+      const url = (state.config.cloudUrl || "").trim();
+      if (!url) {
+        showToast("Configure o URL do Firebase na aba 8 (Acesso, Equipa & Nuvem).");
+        openTab("acesso");
+        return;
+      }
+      const endpoint = url.replace(/\/+$/, "") + ".json";
+      try {
+        const res = await fetch(endpoint);
+        if (res.ok) {
+          const remote = await res.json();
+          if (remote && Array.isArray(remote.equipamentos)) {
+            state = {
+              ...state,
+              equipamentos: remote.equipamentos,
+              atividades: Array.isArray(remote.atividades) ? remote.atividades : state.atividades,
+              pecas: Array.isArray(remote.pecas) ? remote.pecas : state.pecas,
+              empresas: Array.isArray(remote.empresas) ? remote.empresas : state.empresas,
+              teamPins: Array.isArray(remote.teamPins) ? remote.teamPins : state.teamPins,
+              mapaDias: remote.mapaDias || state.mapaDias
+            };
+          }
+        }
+        await fetch(endpoint, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...state, authenticated: true, updatedAt: new Date().toISOString() })
+        });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        renderAll();
+        showToast("Sincronização com Firebase concluída!");
+      } catch {
+        showToast("Falha na ligação ao Firebase. Dados mantidos localmente.");
+      }
+    }
+
+    function saveState(toastMsg) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch {
+        showToast("Aviso: limite de armazenamento local atingido (ex.: muitas fotos).");
+      }
+      pushFirebaseBackground();
+      renderAll();
+      if (toastMsg) showToast(toastMsg);
+    }
+
+    /* ACESSO DIRETO SEM BLOQUEIO DE PIN INICIAL */
+    function renderPinOverlay() {}
+    function lockSystem() {
+      showToast("Bloqueio de PIN inicial desativado — acesso direto ativo.");
+    }
+
+    function openTab(tabName) {
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === tabName));
+      document.querySelectorAll(".panel").forEach(p => p.classList.toggle("active", p.id === `tab-${tabName}`));
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => openTab(btn.dataset.tab));
+    });
+
+    function addDays(dateStr, days) {
+      const d = new Date((dateStr || "2026-11-01") + "T00:00:00");
+      d.setDate(d.getDate() + Number(days || 30));
+      return d.toISOString().slice(0, 10);
+    }
+
+    function evalPreventiva(eq) {
+      const nextDate = addDays(eq.ultimaPrev, eq.cicloDias);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const next = new Date(nextDate + "T00:00:00");
+      const diff = Math.ceil((next - today) / (1000 * 60 * 60 * 24));
+      if (diff < 0) return { key: "ATRASADA", label: `Atrasada (${Math.abs(diff)}d)`, badge: "state-down", alert: true };
+      if (diff <= 7) return { key: "PROXIMA", label: `Próxima (${diff}d)`, badge: "state-warn", alert: true };
+      return { key: "EM_DIA", label: "Em Dia", badge: "state-op", alert: false };
+    }
+
+    function getMapValue(eqCode, day) {
+      if (state.mapaDias[eqCode] && state.mapaDias[eqCode][day] !== undefined) {
+        return state.mapaDias[eqCode][day];
+      }
+      const eq = state.equipamentos.find(e => e.codigo === eqCode);
+      if (!eq) return "";
+      const todayDay = new Date().getDate();
+      return day <= todayDay ? eq.estado : "";
+    }
+
+    function setMapValue(eqCode, day, val) {
+      if (!state.mapaDias[eqCode]) state.mapaDias[eqCode] = {};
+      state.mapaDias[eqCode][day] = val;
+    }
+
+    function renderDashboard() {
+      const total = state.equipamentos.length;
+      const downList = state.equipamentos.filter(e => e.estado === "X");
+      const opCount = total - downList.length;
+      const avail = total > 0 ? ((opCount / total) * 100).toFixed(1) : "0.0";
+
+      let prevAlertCount = 0;
+      const alertsEl = document.getElementById("dashboardAlerts");
+      alertsEl.innerHTML = "";
+
+      state.equipamentos.forEach(eq => {
+        const nextDate = addDays(eq.ultimaPrev, eq.cicloDias);
+        const pv = evalPreventiva(eq);
+        if (pv.alert) prevAlertCount += 1;
+
+        if (eq.estado === "X") {
+          const div = document.createElement("div");
+          div.className = "alert-row";
+          div.innerHTML = `<strong>INOPERATIVO ("X"):</strong> ${eq.codigo} — ${eq.nome} (${eq.categoria}) | Entidade: <strong>${eq.empresa}</strong>`;
+          alertsEl.appendChild(div);
+        } else if (pv.key === "ATRASADA") {
+          const div = document.createElement("div");
+          div.className = "alert-row warn-row";
+          div.innerHTML = `<strong>PREVENTIVA ATRASADA:</strong> ${eq.codigo} — ${eq.nome} | Prevista para <strong>${nextDate}</strong> (${eq.empresa})`;
+          alertsEl.appendChild(div);
+        }
+      });
+
+      if (!alertsEl.children.length) {
+        alertsEl.innerHTML = `<div class="alert-row ok-row"><strong>Operação Estável:</strong> Todos os equipamentos listados estão operacionais ("=") sem preventivas vencidas.</div>`;
+      }
+
+      document.getElementById("kpiTotal").textContent = String(total);
+      document.getElementById("kpiAvail").textContent = `${avail}%`;
+      document.getElementById("kpiDown").textContent = String(downList.length);
+      document.getElementById("kpiPrevAlert").textContent = String(prevAlertCount);
+      document.getElementById("dashDateLabel").textContent = `Atualizado em: ${new Date().toLocaleDateString("pt-PT")}`;
+
+      const categories = [
+        "Viaturas",
+        "SLCI",
+        "Equipamentos de Limpeza das Áreas Operacionais",
+        "Escadas Rolantes",
+        "Elevadores",
+        "Pontes de Embarque",
+        "Tapetes Rolantes",
+        "Chillers",
+        "Unidades Tratadoras de Ar (UTA)",
+        "Ar Condicionado (AC)"
+      ];
+
+      const catGrid = document.getElementById("categorySummaryGrid");
+      catGrid.innerHTML = categories.map(cat => {
+        const items = state.equipamentos.filter(e => e.categoria === cat);
+        const down = items.filter(e => e.estado === "X").length;
+        return `
+          <div class="cat-item">
+            <div>
+              <div>${cat}</div>
+              <small class="muted">${down > 0 ? down + ' inoperativo ("X")' : 'Operacional'}</small>
+            </div>
+            <strong>${items.length}</strong>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderAtividades() {
+      const sel = document.getElementById("atvEquip");
+      const prevVal = sel.value;
+      sel.innerHTML = state.equipamentos
+        .map(e => `<option value="${e.codigo} — ${e.nome}">${e.codigo} — ${e.nome} [${e.empresa}]</option>`)
+        .join("");
+      if (prevVal) sel.value = prevVal;
+
+      if (!document.getElementById("atvData").value) {
+        const now = new Date();
+        document.getElementById("atvData").value = now.toISOString().slice(0, 10);
+        document.getElementById("atvDia").value = now.getDate();
+      }
+      if (!document.getElementById("atvTecnico").value) {
+        document.getElementById("atvTecnico").value = state.config.usuario || "";
+      }
+
+      const q = (document.getElementById("searchAtividades").value || "").toLowerCase().trim();
+      const filtered = state.atividades.filter(a =>
+        !q ||
+        a.equipamento.toLowerCase().includes(q) ||
+        a.tecnico.toLowerCase().includes(q) ||
+        a.tipo.toLowerCase().includes(q) ||
+        (a.codigo || "").toLowerCase().includes(q) ||
+        (a.descricao || "").toLowerCase().includes(q)
+      );
+
+      const tbody = document.getElementById("atividadesBody");
+      tbody.innerHTML = filtered.map((a, idx) => {
+        const thumbs = (a.fotos || []).map(src => `<img src="${src}" class="photo-thumb" alt="Evidência" />`).join("");
+        return `
+          <tr>
+            <td>${a.data} <span class="muted">(Dia ${a.dia || "-"})</span></td>
+            <td><strong>${a.equipamento}</strong></td>
+            <td>${a.tipo}</td>
+            <td>${a.tecnico}${a.colegas ? "<br><small class='muted'>Equipa: " + a.colegas + "</small>" : ""}</td>
+            <td>${a.codigo || "-"}</td>
+            <td><span class="badge-state ${a.estado === "=" ? "state-op" : "state-down"}">${a.estado}</span></td>
+            <td>
+              ${a.pecas && a.pecas !== "N/A" ? "<div><strong>Peças:</strong> " + a.pecas + "</div>" : ""}
+              <div>${a.descricao || "-"}</div>
+            </td>
+            <td>${thumbs || "<span class='muted'>—</span>"}</td>
+            <td class="no-print"><button class="btn btn-danger-sm" type="button" onclick="deleteAtividade(${idx})">Remover</button></td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function clearAtvPhotos() {
+      pendingPhotos = [];
+      document.getElementById("atvPhotoPreview").innerHTML = "";
+    }
+
+    document.getElementById("atvFotos").addEventListener("change", e => {
+      pendingPhotos = [];
+      const preview = document.getElementById("atvPhotoPreview");
+      preview.innerHTML = "";
+      Array.from(e.target.files || []).slice(0, 4).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = ev => {
+          pendingPhotos.push(ev.target.result);
+          const img = document.createElement("img");
+          img.src = ev.target.result;
+          img.className = "photo-thumb";
+          preview.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+
+    document.getElementById("atividadeForm").addEventListener("submit", e => {
+      e.preventDefault();
+      const eqLabel = document.getElementById("atvEquip").value;
+      const eqCode = eqLabel.split(" — ")[0];
+      const dataStr = document.getElementById("atvData").value;
+      const diaNum = Math.min(31, Math.max(1, Number(document.getElementById("atvDia").value || new Date(dataStr + "T00:00:00").getDate())));
+      const tipo = document.getElementById("atvTipo").value;
+      const estado = document.getElementById("atvEstado").value;
+
+      const eqObj = state.equipamentos.find(item => item.codigo === eqCode);
+      if (eqObj) {
+        eqObj.estado = estado;
+        if (tipo === "Preventiva" && estado === "=") {
+          eqObj.ultimaPrev = dataStr;
+        }
+      }
+      setMapValue(eqCode, diaNum, estado);
+
+      state.atividades.unshift({
+        id: "ATV-" + Date.now(),
+        data: dataStr,
+        dia: diaNum,
+        equipamento: eqLabel,
+        tipo,
+        tecnico: document.getElementById("atvTecnico").value.trim(),
+        colegas: document.getElementById("atvColegas").value.trim(),
+        codigo: document.getElementById("atvCodigo").value.trim(),
+        estado,
+        pecas: document.getElementById("atvPecas").value.trim() || "N/A",
+        descricao: document.getElementById("atvDescricao").value.trim(),
+        fotos: [...pendingPhotos]
+      });
+
+      e.target.reset();
+      clearAtvPhotos();
+      saveState("Atividade registada e estado atualizado!");
+    });
+
+    function deleteAtividade(idx) {
+      state.atividades.splice(idx, 1);
+      saveState("Registo de atividade removido.");
+    }
+
+    function renderPreventivas() {
+      const empFilter = document.getElementById("filtroPrevEmpresa").value;
+      const stFilter = document.getElementById("filtroPrevStatus").value;
+      const tbody = document.getElementById("preventivasBody");
+
+      const rows = state.equipamentos
+        .map((eq, idx) => ({ eq, idx, nextDate: addDays(eq.ultimaPrev, eq.cicloDias), pv: evalPreventiva(eq) }))
+        .filter(item => (empFilter === "TODAS" || item.eq.empresa === empFilter))
+        .filter(item => (stFilter === "TODOS" || item.pv.key === stFilter));
+
+      tbody.innerHTML = rows.map(({ eq, idx, nextDate, pv }) => `
+        <tr>
+          <td>${eq.codigo}</td>
+          <td><strong>${eq.nome}</strong></td>
+          <td>${eq.categoria}</td>
+          <td>${eq.empresa}</td>
+          <td>${eq.cicloDias}d</td>
+          <td>${eq.ultimaPrev}</td>
+          <td><strong>${nextDate}</strong></td>
+          <td><span class="badge-state ${pv.badge}">${pv.label}</span></td>
+          <td class="no-print"><button class="btn btn-outline btn-sm" type="button" onclick="concluirPreventiva(${idx})">Concluir Hoje</button></td>
+        </tr>
+      `).join("");
+    }
+
+    function concluirPreventiva(idx) {
+      const eq = state.equipamentos[idx];
+      if (!eq) return;
+      const today = new Date().toISOString().slice(0, 10);
+      eq.ultimaPrev = today;
+      eq.estado = "=";
+      state.atividades.unshift({
+        id: "ATV-" + Date.now(),
+        data: today,
+        dia: new Date().getDate(),
+        equipamento: `${eq.codigo} — ${eq.nome}`,
+        tipo: "Preventiva",
+        tecnico: state.config.usuario || "Técnico AIM",
+        colegas: eq.empresa,
+        codigo: "P1",
+        estado: "=",
+        pecas: "Revisão preventiva",
+        descricao: `Manutenção preventiva concluída (ciclo de ${eq.cicloDias} dias).`,
+        fotos: []
+      });
+      saveState(`Preventiva de ${eq.codigo} atualizada para hoje!`);
+    }
+
+    function renderEquipamentos() {
+      const q = (document.getElementById("searchEquip").value || "").toLowerCase().trim();
+      const cat = document.getElementById("filterEqCat").value;
+      const tbody = document.getElementById("equipamentosBody");
+
+      const list = state.equipamentos
+        .map((e, idx) => ({ e, idx }))
+        .filter(({ e }) => (cat === "TODAS" || e.categoria === cat))
+        .filter(({ e }) =>
+          !q ||
+          e.codigo.toLowerCase().includes(q) ||
+          e.nome.toLowerCase().includes(q) ||
+          e.categoria.toLowerCase().includes(q) ||
+          e.empresa.toLowerCase().includes(q)
+        );
+
+      tbody.innerHTML = list.map(({ e, idx }) => `
+        <tr>
+          <td>${e.codigo}</td>
+          <td><strong>${e.nome}</strong></td>
+          <td>${e.categoria}</td>
+          <td>${e.empresa}</td>
+          <td><span class="badge-state ${e.estado === "=" ? "state-op" : "state-down"}">${e.estado === "=" ? "= Operativo" : "X Inoperativo"}</span></td>
+          <td class="no-print"><button class="btn btn-outline btn-sm" type="button" onclick="toggleEquipState(${idx})">Alternar = / X</button></td>
+        </tr>
+      `).join("");
+    }
+
+    function toggleEquipState(idx) {
+      const eq = state.equipamentos[idx];
+      if (!eq) return;
+      eq.estado = eq.estado === "=" ? "X" : "=";
+      setMapValue(eq.codigo, new Date().getDate(), eq.estado);
+      saveState(`${eq.codigo} marcado como "${eq.estado}".`);
+    }
+
+    document.getElementById("equipForm").addEventListener("submit", e => {
+      e.preventDefault();
+      const codigo = document.getElementById("eqCodigo").value.trim();
+      const nome = document.getElementById("eqNome").value.trim();
+      const categoria = document.getElementById("eqCategoria").value;
+      const empresa = document.getElementById("eqEmpresa").value;
+      const estado = document.getElementById("eqEstado").value;
+      const cicloDias = Number(document.getElementById("eqCiclo").value || 30);
+
+      state.equipamentos.push({
+        codigo,
+        nome,
+        categoria,
+        empresa,
+        estado,
+        cicloDias,
+        ultimaPrev: new Date().toISOString().slice(0, 10)
+      });
+      e.target.reset();
+      document.getElementById("eqCiclo").value = "30";
+      saveState(`Equipamento ${codigo} adicionado!`);
+    });
+
+    function renderPecas() {
+      const tbody = document.getElementById("pecasBody");
+      let totalMt = 0;
+
+      tbody.innerHTML = state.pecas.map((p, idx) => {
+        const valNum = Number(p.valor || 0);
+        totalMt += valNum;
+        return `
+          <tr>
+            <td>${p.data || "-"}</td>
+            <td><strong>${p.item}</strong></td>
+            <td>${p.fornecedor}</td>
+            <td>${p.qtd || 1}</td>
+            <td><span class="badge-state ${p.estado === "Entregue" || p.estado === "Aprovado" ? "state-op" : "state-warn"}">${p.estado}</span></td>
+            <td>${valNum.toLocaleString("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            <td class="no-print"><button class="btn btn-danger-sm" type="button" onclick="deletePeca(${idx})">Remover</button></td>
+          </tr>
+        `;
+      }).join("");
+
+      document.getElementById("pecasTotalLabel").textContent = `Total Estimado: ${totalMt.toLocaleString("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MT`;
+    }
+
+    document.getElementById("pecaForm").addEventListener("submit", e => {
+      e.preventDefault();
+      state.pecas.unshift({
+        id: "PEC-" + Date.now(),
+        data: new Date().toISOString().slice(0, 10),
+        item: document.getElementById("pecaItem").value.trim(),
+        fornecedor: document.getElementById("pecaFornecedor").value.trim(),
+        qtd: Number(document.getElementById("pecaQtd").value || 1),
+        estado: document.getElementById("pecaEstado").value,
+        valor: document.getElementById("pecaValor").value || "0.00"
+      });
+      e.target.reset();
+      document.getElementById("pecaQtd").value = "1";
+      saveState("Pedido / Proposta registado!");
+    });
+
+    function deletePeca(idx) {
+      state.pecas.splice(idx, 1);
+      saveState("Registo removido.");
+    }
+
+    function renderEmpresas() {
+      const tbody = document.getElementById("empresasBody");
+      tbody.innerHTML = state.empresas.map(emp => {
+        const count = state.equipamentos.filter(eq =>
+          eq.empresa.toLowerCase().includes(emp.nome.toLowerCase()) ||
+          (emp.nome.includes("AIM") && eq.empresa === "AIM")
+        ).length;
+        return `
+          <tr>
+            <td><strong>${emp.nome}</strong></td>
+            <td>${emp.tipo}</td>
+            <td>${emp.area}</td>
+            <td><strong>${count}</strong></td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function addEmpresaPrompt() {
+      const nome = prompt("Nome da Entidade / Subcontratada / Fornecedor:");
+      if (!nome || !nome.trim()) return;
+      const tipo = prompt("Tipo (Ex.: Subcontratada, Fornecedor):", "Subcontratada") || "Subcontratada";
+      const area = prompt("Área de Atuação:", "Manutenção Técnica") || "Manutenção Técnica";
+      state.empresas.push({ nome: nome.trim(), tipo: tipo.trim(), area: area.trim() });
+      saveState("Entidade adicionada!");
+    }
+
+    function renderMapaAndReport() {
+      const tbody = document.getElementById("mapaMensalBody");
+      tbody.innerHTML = state.equipamentos.map(eq => {
+        const cells = Array.from({ length: 31 }, (_, i) => {
+          const day = i + 1;
+          const v = getMapValue(eq.codigo, day);
+          const cls = v === "=" ? "cell-op" : v === "X" ? "cell-down" : "cell-empty";
+          return `<td class="${cls}" onclick="cycleMapCell('${eq.codigo}', ${day})">${v || "·"}</td>`;
+        }).join("");
+        return `<tr><td class="eq-col"><strong>${eq.codigo}</strong> — ${eq.nome}</td>${cells}</tr>`;
+      }).join("");
+
+      document.getElementById("covPelouro").textContent = state.config.pelouro || DEFAULT_STATE.config.pelouro;
+      document.getElementById("covTituloDoc").textContent = state.config.tituloDoc || DEFAULT_STATE.config.tituloDoc;
+      document.getElementById("covPeriodo").textContent = state.config.periodo || DEFAULT_STATE.config.periodo;
+      document.getElementById("covAutor").textContent = state.config.usuario || "Delpódio Eugénio Balate";
+      document.getElementById("relElaboradoPor").textContent = state.config.usuario || "Delpódio Eugénio Balate";
+
+      const logoSrc = (state.config.logoDataUrl || "").trim();
+      const topLogo = document.getElementById("topLogoImg");
+      const covLogo = document.getElementById("coverLogoPreview");
+      if (logoSrc) {
+        topLogo.src = logoSrc;
+        topLogo.classList.add("visible");
+        covLogo.src = logoSrc;
+        covLogo.classList.add("visible");
+      } else {
+        topLogo.classList.remove("visible");
+        covLogo.classList.remove("visible");
+      }
+
+      const total = state.equipamentos.length;
+      const down = state.equipamentos.filter(e => e.estado === "X");
+      const avail = total > 0 ? (((total - down.length) / total) * 100).toFixed(1) : "0.0";
+
+      const repHtml = `
+        <p><strong>${state.config.pelouro || DEFAULT_STATE.config.pelouro}</strong></p>
+        <p><strong>AEROPORTO INTERNACIONAL DE MAPUTO (AIM)</strong> — Manutenção Mecânica e Transportes | Período: <strong>${state.config.periodo || "Novembro de 2026"}</strong></p>
+        <p><strong>Responsável:</strong> ${state.config.usuario} (${state.config.cargo})</p>
+        <p><strong>Resumo Operacional:</strong> ${total} equipamentos monitorizados | Disponibilidade: <strong>${avail}%</strong> | Inoperativos ("X"): <strong>${down.length}</strong> | Intervenções registadas: <strong>${state.atividades.length}</strong></p>
+        <p><strong>Equipamentos Inoperativos ("X"):</strong> ${down.length ? down.map(d => `${d.codigo} (${d.nome} — ${d.empresa})`).join("; ") : "Nenhum no momento."}</p>
+        <p><strong>Últimas Intervenções:</strong></p>
+        <ul>
+          ${state.atividades.slice(0, 8).map(a => `<li><strong>${a.data}</strong> | ${a.equipamento} | <em>${a.tipo}</em> | Estado: <strong>${a.estado}</strong> | Téc.: ${a.tecnico} — ${a.descricao || ""}</li>`).join("")}
+        </ul>
+      `;
+      document.getElementById("weeklyReportPreview").innerHTML = repHtml;
+    }
+
+    function cycleMapCell(eqCode, day) {
+      const cur = getMapValue(eqCode, day);
+      const next = cur === "" ? "=" : cur === "=" ? "X" : "";
+      setMapValue(eqCode, day, next);
+      if (day === new Date().getDate() && next !== "") {
+        const eq = state.equipamentos.find(e => e.codigo === eqCode);
+        if (eq) eq.estado = next;
+      }
+      saveState(`${eqCode} (Dia ${day}): "${next || "vazio"}"`);
+    }
+
+    function downloadWordReport(mode) {
+      const title = mode === "mapa"
+        ? "Mapa Mensal Oficial de Operatividade — Tabela Nº 1 (SGM-AIM Pro v6.0)"
+        : (state.config.tituloDoc || "Relatório Semanal de Manutenção Mecânica e Transportes (SGM-AIM Pro v6.0)");
+
+      const mapHeader = Array.from({ length: 31 }, (_, i) => `<th>${i + 1}</th>`).join("");
+      const mapRows = state.equipamentos.map(eq => {
+        const tds = Array.from({ length: 31 }, (_, i) => `<td>${getMapValue(eq.codigo, i + 1)}</td>`).join("");
+        return `<tr><td>${eq.codigo} — ${eq.nome}</td>${tds}</tr>`;
+      }).join("");
+
+      const atvRows = state.atividades.map(a =>
+        `<tr><td>${a.data}</td><td>${a.equipamento}</td><td>${a.tipo}</td><td>${a.tecnico}</td><td>${a.codigo || "-"}</td><td><b>${a.estado}</b></td><td>${a.descricao || "-"}</td></tr>`
+      ).join("");
+
+      const logoTag = state.config.logoDataUrl
+        ? `<img src="${state.config.logoDataUrl}" style="max-height:54px; margin-bottom:8px;" /><br>`
+        : "";
+
+      const docBody = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+        <head><meta charset="utf-8"><title>${title}</title>
+        <style>
+          body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; color: #111; }
+          .cover { border: 1px solid #0a2e54; padding: 14px; margin-bottom: 14px; background: #f8fafc; }
+          h1 { font-size: 15pt; color: #0a2e54; margin: 4px 0; }
+          h2 { font-size: 12pt; color: #0a2e54; margin-top: 16px; }
+          table { border-collapse: collapse; width: 100%; margin-top: 8px; }
+          th, td { border: 1px solid #444; padding: 4px 6px; font-size: 9pt; text-align: left; }
+          th { background: #e6eef7; }
+          .center td, .center th { text-align: center; padding: 3px; font-size: 8pt; }
+          .visto { margin-top: 24px; font-size: 10pt; }
+        </style></head><body>
+          <div class="cover">
+            ${logoTag}
+            <div><b>${state.config.pelouro || DEFAULT_STATE.config.pelouro}</b></div>
+            <h1>${title}</h1>
+            <div><b>Aeroporto Internacional de Maputo (AIM)</b> — Manutenção Mecânica e Transportes | <b>Período:</b> ${state.config.periodo || "Novembro de 2026"}<br>
+            <b>Elaborado por:</b> ${state.config.usuario} | <b>Data de emissão:</b> ${new Date().toLocaleDateString("pt-PT")}</div>
+          </div>
+          <p><b>Legenda oficial:</b> "=" = Operativo &nbsp;|&nbsp; "X" = Inoperativo</p>
+
+          <h2>Mapa Mensal — Tabela Nº 1 (31 Dias)</h2>
+          <table class="center"><thead><tr><th>Equipamento</th>${mapHeader}</tr></thead><tbody>${mapRows}</tbody></table>
+
+          <h2>Registo de Atividades e Intervenções</h2>
+          <table><thead><tr><th>Data</th><th>Equipamento</th><th>Tipo</th><th>Técnico</th><th>Cód.</th><th>Estado</th><th>Descrição</th></tr></thead><tbody>${atvRows}</tbody></table>
+
+          <div class="visto">
+            <b>Visto do Director de Manutenção:</b> ___________________________________________ &nbsp;&nbsp; <b>Data:</b> ____/____/2026
+          </div>
+        </body></html>
+      `;
+
+      const blob = new Blob(["﻿", docBody], { type: "application/msword" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = mode === "mapa" ? "SGM-AIM-Mapa-Mensal-Tabela-1.doc" : "SGM-AIM-Relatorio-Semanal.doc";
+      a.click();
+      showToast("Documento Word (.DOC) gerado para transferência!");
+    }
+
+    function exportExcelXML() {
+      const mapHeader = Array.from({ length: 31 }, (_, i) => `<Cell><Data ss:Type="Number">${i + 1}</Data></Cell>`).join("");
+      const mapRows = state.equipamentos.map(eq => {
+        const cells = Array.from({ length: 31 }, (_, i) => {
+          const val = String(getMapValue(eq.codigo, i + 1) || "");
+          return `<Cell><Data ss:Type="String">${val.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</Data></Cell>`;
+        }).join("");
+        return `<Row><Cell><Data ss:Type="String">${eq.codigo}</Data></Cell><Cell><Data ss:Type="String">${eq.nome}</Data></Cell>${cells}</Row>`;
+      }).join("");
+
+      const atvRows = state.atividades.map(a =>
+        `<Row>` +
+        `<Cell><Data ss:Type="String">${a.data}</Data></Cell>` +
+        `<Cell><Data ss:Type="String">${a.equipamento}</Data></Cell>` +
+        `<Cell><Data ss:Type="String">${a.tipo}</Data></Cell>` +
+        `<Cell><Data ss:Type="String">${a.tecnico}</Data></Cell>` +
+        `<Cell><Data ss:Type="String">${a.estado}</Data></Cell>` +
+        `<Cell><Data ss:Type="String">${(a.descricao || "").replace(/&/g, "&amp;").replace(/</g, "&lt;")}</Data></Cell>` +
+        `</Row>`
+      ).join("");
+
+      const xml = `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+  <Worksheet ss:Name="Mapa_Mensal_Tabela_1">
+    <Table>
+      <Row><Cell><Data ss:Type="String">Codigo</Data></Cell><Cell><Data ss:Type="String">Equipamento</Data></Cell>${mapHeader}</Row>
+      ${mapRows}
+    </Table>
+  </Worksheet>
+  <Worksheet ss:Name="Atividades_Diarias">
+    <Table>
+      <Row><Cell><Data ss:Type="String">Data</Data></Cell><Cell><Data ss:Type="String">Equipamento</Data></Cell><Cell><Data ss:Type="String">Tipo</Data></Cell><Cell><Data ss:Type="String">Tecnico</Data></Cell><Cell><Data ss:Type="String">Estado</Data></Cell><Cell><Data ss:Type="String">Descricao</Data></Cell></Row>
+      ${atvRows}
+    </Table>
+  </Worksheet>
+</Workbook>`;
+
+      const blob = new Blob([xml], { type: "application/vnd.ms-excel" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `SGM-AIM-Pro-v6-${new Date().toISOString().slice(0, 10)}.xls`;
+      a.click();
+      showToast("Planilha Excel (.XLS) exportada!");
+    }
+
+    function renderConfigAndTeam() {
+      document.getElementById("cfgUsuario").value = state.config.usuario || "";
+      document.getElementById("cfgCargo").value = state.config.cargo || "";
+      document.getElementById("cfgPin").value = state.config.pin || "";
+      document.getElementById("cfgCloudUrl").value = state.config.cloudUrl || "";
+      document.getElementById("cfgPelouro").value = state.config.pelouro || DEFAULT_STATE.config.pelouro;
+      document.getElementById("cfgTituloDoc").value = state.config.tituloDoc || DEFAULT_STATE.config.tituloDoc;
+      document.getElementById("cfgPeriodo").value = state.config.periodo || DEFAULT_STATE.config.periodo;
+
+      document.getElementById("activeUserBadge").textContent = `Técnico: ${state.config.usuario || "Operador"}`;
+      document.getElementById("syncBadge").textContent = state.config.cloudUrl ? "Firebase Configurado" : "Armazenamento Local";
+
+      const tbody = document.getElementById("teamPinsBody");
+      tbody.innerHTML = state.teamPins.map((m, idx) => `
+        <tr>
+          <td><strong>${m.nome}</strong></td>
+          <td>${m.funcao || "—"}</td>
+          <td><code>${m.pin}</code></td>
+          <td class="no-print"><button class="btn btn-danger-sm" type="button" onclick="deleteTeamPin(${idx})">Remover</button></td>
+        </tr>
+      `).join("");
+    }
+
+    document.getElementById("cfgLogoFile").addEventListener("change", e => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        state.config.logoDataUrl = ev.target.result;
+        saveState("Logotipo da folha de rosto carregado!");
+      };
+      reader.readAsDataURL(file);
+    });
+
+    document.getElementById("configForm").addEventListener("submit", e => {
+      e.preventDefault();
+      state.config = {
+        ...state.config,
+        usuario: document.getElementById("cfgUsuario").value.trim(),
+        cargo: document.getElementById("cfgCargo").value.trim(),
+        pin: document.getElementById("cfgPin").value.trim(),
+        cloudUrl: document.getElementById("cfgCloudUrl").value.trim(),
+        pelouro: document.getElementById("cfgPelouro").value.trim(),
+        tituloDoc: document.getElementById("cfgTituloDoc").value.trim(),
+        periodo: document.getElementById("cfgPeriodo").value.trim()
+      };
+      const existing = state.teamPins.find(t => t.nome === state.config.usuario);
+      if (existing) {
+        existing.pin = state.config.pin;
+      }
+      saveState("Configurações e folha de rosto guardadas!");
+    });
+
+    document.getElementById("teamPinForm").addEventListener("submit", e => {
+      e.preventDefault();
+      const nome = document.getElementById("teamNome").value.trim();
+      const funcao = document.getElementById("teamFuncao").value.trim();
+      const pin = document.getElementById("teamPin").value.trim();
+      if (!nome || !pin) return;
+      state.teamPins.push({ nome, funcao, pin });
+      e.target.reset();
+      saveState(`PIN cadastrado para ${nome}!`);
+    });
+
+    function deleteTeamPin(idx) {
+      if (state.teamPins.length <= 1) {
+        showToast("Mantenha pelo menos um utilizador cadastrado.");
+        return;
+      }
+      state.teamPins.splice(idx, 1);
+      saveState("Técnico removido.");
+    }
+
+    function resetDemoData() {
+      if (!confirm("Repor os dados iniciais padrão do SGM-AIM Pro v6.0?")) return;
+      localStorage.removeItem(STORAGE_KEY);
+      state = cloneDefault();
+      saveState("Dados repostos com sucesso.");
+    }
+
+    function exportJSON() {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `sgm-aim-pro-v6-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      showToast("Cópia de segurança (.JSON) exportada!");
+    }
+
+    function exportCSV() {
+      const headers = ["Codigo", "Designacao", "Categoria", "Entidade", "Estado", "CicloDias", "UltimaPreventiva", "ProximaPreventiva"];
+      const lines = [headers.join(";")];
+      state.equipamentos.forEach(e => {
+        const row = [e.codigo, e.nome, e.categoria, e.empresa, e.estado, e.cicloDias, e.ultimaPrev, addDays(e.ultimaPrev, e.cicloDias)];
+        lines.push(row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(";"));
+      });
+      const blob = new Blob(["﻿", lines.join("
+")], { type: "text/csv;charset=utf-8;" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `sgm-aim-pro-equipamentos-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      showToast("Inventário (.CSV) exportado!");
+    }
+
+    document.getElementById("searchAtividades").addEventListener("input", renderAtividades);
+    document.getElementById("filtroPrevEmpresa").addEventListener("change", renderPreventivas);
+    document.getElementById("filtroPrevStatus").addEventListener("change", renderPreventivas);
+    document.getElementById("searchEquip").addEventListener("input", renderEquipamentos);
+    document.getElementById("filterEqCat").addEventListener("change", renderEquipamentos);
+
+    function renderAll() {
+      renderDashboard();
+      renderAtividades();
+      renderPreventivas();
+      renderEquipamentos();
+      renderPecas();
+      renderEmpresas();
+      renderMapaAndReport();
+      renderConfigAndTeam();
+    }
+
+    renderAll();
+  </script>
+</body>
+</html>
